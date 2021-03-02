@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Numerics;
 using System.Reflection;
@@ -28,15 +29,19 @@ namespace BigThings
     /// </para>
     /// </summary>
     [TypeConverter(typeof(BigFlagsConverter))]
-    public struct BigFlags : IEquatable<BigFlags>, IComparable<BigFlags>, IComparable, IConvertible
+    [SuppressMessage("ReSharper", "UnassignedReadonlyField", Justification = "This thing populate it self.")]
+    public struct BigFlags : IComparable, IConvertible, IEquatable<BigFlags>, IComparable<BigFlags>
     {
         #region State
 
-        private static readonly List<FieldInfo> Fields;
-        private static readonly List<BigFlags> FieldValues;
+        private static readonly IList<FieldInfo> Fields = typeof(BigFlags).GetFields(BindingFlags.Public | BindingFlags.Static).ToList();
+        private static readonly IList<BigFlags> FieldValues = GetFieldValues();
 
+        // ?
         private static readonly bool ZeroInit = true;
+
         private BigInteger _value;
+        public BigInteger Value => _value;
 
         /// <summary>
         /// Creates a value taking ZeroInit into consideration.
@@ -59,34 +64,17 @@ namespace BigThings
         /// <summary>
         /// Static constructor. Sets the static public fields.
         /// </summary>
-        static BigFlags()
+        private static IList<BigFlags> GetFieldValues()
         {
-            Fields = typeof(BigFlags).GetFields(
-                BindingFlags.Public | BindingFlags.Static).ToList();
-            FieldValues = new List<BigFlags>();
-            for (int i = 0; i < Fields.Count; i++)
-            {
-                var field = Fields[i];
-                var fieldVal = new BigFlags();
-                fieldVal._value = CreateValue(i);
-                field.SetValue(null, fieldVal);
-                FieldValues.Add(fieldVal);
-            }
-        }
-
-        static object XD()
-        {
-            var fields = typeof(BigFlags).GetFields(BindingFlags.Public | BindingFlags.Static).ToList();
             var fieldValues = new List<BigFlags>();
             for (var i = 0; i < Fields.Count; i++)
             {
-                var field = fields[i];
-                var fieldVal = new BigFlags {_value = CreateValue(i)};
+                var field = Fields[i];
+                var fieldVal = new BigFlags { _value = CreateValue(i) };
                 field.SetValue(null, fieldVal);
                 fieldValues.Add(fieldVal);
             }
-
-            return (fields, fieldValues);
+            return fieldValues;
         }
 
         #endregion Construction
@@ -133,6 +121,39 @@ namespace BigThings
         /// <returns></returns>
         public static bool operator !=(BigFlags lhs, BigFlags rhs) => !(lhs == rhs);
 
+        /// <summary>
+        /// Greater than operator.
+        /// </summary>
+        /// <param name="lhs"></param>
+        /// <param name="rhs"></param>
+        /// <returns></returns>
+        public static bool operator >(BigFlags lhs, BigFlags rhs) => lhs > rhs;
+
+        /// <summary>
+        /// Lower than operator.
+        /// </summary>
+        /// <param name="lhs"></param>
+        /// <param name="rhs"></param>
+        /// <returns></returns>
+        public static bool operator <(BigFlags lhs, BigFlags rhs) => lhs < rhs;
+
+
+        /// <summary>
+        /// Greater than or equal operator.
+        /// </summary>
+        /// <param name="lhs"></param>
+        /// <param name="rhs"></param>
+        /// <returns></returns>
+        public static bool operator >=(BigFlags lhs, BigFlags rhs) => lhs > rhs;
+
+        /// <summary>
+        /// Lower than or equal operator.
+        /// </summary>
+        /// <param name="lhs"></param>
+        /// <param name="rhs"></param>
+        /// <returns></returns>
+        public static bool operator <=(BigFlags lhs, BigFlags rhs) => lhs < rhs;
+
         #endregion Operators
 
         #region System.Object Overrides
@@ -155,21 +176,20 @@ namespace BigThings
         }
 
         /// <summary>
+        /// Overridden. Gets the hash code of the internal BitArray.
+        /// </summary>
+        /// <returns></returns>
+        public override int GetHashCode() => Value.GetHashCode();
+
+        /// <summary>
         /// Overridden. Compares equality with another object.
         /// </summary>
         /// <param name="obj"></param>
         /// <returns></returns>
         public override bool Equals(object obj) => obj is BigFlags flags && Equals(flags);
 
-        /// <summary>
-        /// Overridden. Gets the hash code of the internal BitArray.
-        /// </summary>
-        /// <returns></returns>
-        public override int GetHashCode()
-        {
-            return _value.GetHashCode();
-        }
         #endregion System.Object Overrides
+
 
         #region IEquatable<BigFlags> Members
 
@@ -178,12 +198,11 @@ namespace BigThings
         /// </summary>
         /// <param name="other"></param>
         /// <returns></returns>
-        public bool Equals(BigFlags other)
-        {
-            return _value == other._value;
-        }
+        public bool Equals(BigFlags other) => _value == other._value;
 
         #endregion IEquatable<BigFlags> Members
+
+
 
         #region IComparable<BigFlags> Members
 
@@ -255,6 +274,7 @@ namespace BigThings
 
         ulong IConvertible.ToUInt64(IFormatProvider provider) => Convert.ToUInt64(_value);
 
+
         #endregion IConvertible Members
 
         #region Public Interface
@@ -306,10 +326,6 @@ namespace BigThings
             return true;
         }
 
-        //
-        // Expose "enums" as public static readonly fields.
-        // TODO: Replace this section with your "enum" values.
-        //
         public static readonly BigFlags Value0;
         public static readonly BigFlags Value1;
         public static readonly BigFlags Value2;
