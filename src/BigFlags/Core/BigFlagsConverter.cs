@@ -1,8 +1,8 @@
-using System;
+﻿using System;
 using System.ComponentModel;
 using System.Globalization;
 
-namespace BigThings
+namespace Core
 {
     /// <summary>
     /// Converts objects to and from BigFlags instances.
